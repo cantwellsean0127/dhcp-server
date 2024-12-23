@@ -95,20 +95,20 @@ while True:
 	client_data, client_address = server.recvfrom(MAX_TRANSMISSION_UNIT)
 
 	client_data = {
-		"op": int(client_data[0]),
-		"htype": int(client_data[1]),
-		"hlen": int(client_data[2]),
-		"hops": int(client_data[3]),
+		#"op": int(client_data[0]),
+		#"htype": int(client_data[1]),
+		#"hlen": int(client_data[2]),
+		#"hops": int(client_data[3]),
 		"xid": int.from_bytes(client_data[4:8], byteorder="big"),
-		"secs": int.from_bytes(client_data[8:10], byteorder="big"),
-		"flags": int.from_bytes(client_data[10:12], byteorder="big"),
+		#"secs": int.from_bytes(client_data[8:10], byteorder="big"),
+		#"flags": int.from_bytes(client_data[10:12], byteorder="big"),
 		"ciaddr": IPv4Address(client_data[12:16]),
-		"yiaddr": IPv4Address(client_data[16:20]),
-		"siaddr": IPv4Address(client_data[20:24]),
-		"giaddr": IPv4Address(client_data[24:28]),
+		#"yiaddr": IPv4Address(client_data[16:20]),
+		#"siaddr": IPv4Address(client_data[20:24]),
+		#"giaddr": IPv4Address(client_data[24:28]),
 		"chaddr": client_data[28:44],
-		"sname": client_data[44:108].decode("utf-8").replace("\x00", ""),
-		"file": client_data[108:236].decode("utf-8").replace("\x00", ""),
+		#"sname": client_data[44:108].decode("utf-8").replace("\x00", ""),
+		#"file": client_data[108:236].decode("utf-8").replace("\x00", ""),
 		"options_data": client_data[240:]
 	}
 	client_data = SimpleNamespace(**client_data)
@@ -174,6 +174,7 @@ while True:
 		server_data.yiaddr = used_ip_address.ip_address
 				
 	elif client_data.options.message_type == DHCP_MESSAGE_TYPES.REQUEST:
+		
 		ip_address_used = False
 		for used_ip_address in used_ip_addresses:
 			if used_ip_address.ip_address == client_data.options.requested_ip_address:
@@ -184,6 +185,7 @@ while True:
 				else:
 					server_data.options.message_type = DHCP_MESSAGE_TYPES.NAK
 					server_data.yiaddr = NO_IP_ADDRESS
+	
 		if not ip_address_used:
 			used_ip_address = SimpleNamespace()
 			used_ip_address.ip_address = client_data.options.requested_ip_address
@@ -208,8 +210,8 @@ while True:
 	server_raw_data += server_data.chaddr
 	server_raw_data += server_data.sname.encode("utf-8").ljust(64, b"\x00")
 	server_raw_data += server_data.file.encode("utf-8").ljust(128, b"\x00")
-	
 	server_raw_data += DHCP_MAGIC_COOKIE
+	
 	server_raw_data += DHCP_OPTIONS.MESSAGE_TYPE.to_bytes(1, byteorder="big")
 	server_raw_data += (1).to_bytes(1, byteorder="big")
 	server_raw_data += server_data.options.message_type.to_bytes(1, byteorder="big")
@@ -241,16 +243,5 @@ while True:
 	
 	server_raw_data += DHCP_OPTIONS.END.to_bytes(1, byteorder="big")
 	
-	server.sendto(server_raw_data, ("255.255.255.255", 68))
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	server.sendto(server_raw_data, ("255.255.255.255", DHCP_CLIENT_PORT))
+
