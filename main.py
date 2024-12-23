@@ -6,6 +6,8 @@ from types import SimpleNamespace
 from ipaddress import IPv4Address, IPv4Network
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_BROADCAST, gethostname, gethostbyname
 from binascii import hexlify
+from time import time
+from threading import Thread
 
 if geteuid() != 0:
 	print("Error: Elevated privileges are required.")
@@ -90,6 +92,15 @@ server = socket(AF_INET, SOCK_DGRAM)
 server.bind(("0.0.0.0", DHCP_SERVER_PORT))
 server.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
+def check_leases():
+	while True:
+		for used_ip_address in used_ip_addresses:
+			if time() - used_ip_address.time_leased >= config.lease_time:
+				available_ip_addresses.append(used_ip_address.ip_address)
+				used_ip_addresses.remove(used_ip_address)
+check_leases_thread = Thread(target=check_leases)
+check_leases_thread.start()
+
 while True:
 	
 	client_data, client_address = server.recvfrom(MAX_TRANSMISSION_UNIT)
@@ -171,6 +182,7 @@ while True:
 		used_ip_address = SimpleNamespace()
 		used_ip_address.ip_address = available_ip_addresses[0]
 		used_ip_address.hardware_address = client_data.chaddr
+		used_ip_address.time_leased = time()
 		used_ip_addresses.append(used_ip_address)
 		available_ip_addresses = available_ip_addresses[1:]
 		server_data.options.message_type = DHCP_MESSAGE_TYPES.OFFER
@@ -185,6 +197,7 @@ while True:
 				if used_ip_address.hardware_address == client_data.chaddr:
 					server_data.options.message_type = DHCP_MESSAGE_TYPES.ACK
 					server_data.yiaddr = used_ip_address.ip_address	
+					used_ip_address.time_leased = time()
 				else:
 					server_data.options.message_type = DHCP_MESSAGE_TYPES.NAK
 					server_data.yiaddr = NO_IP_ADDRESS
@@ -193,6 +206,7 @@ while True:
 			used_ip_address = SimpleNamespace()
 			used_ip_address.ip_address = client_data.options.requested_ip_address
 			used_ip_address.hardware_address = client_data.chaddr
+			used_ip_address.time_leased = time()
 			used_ip_addresses.append(used_ip_address)
 			available_ip_addresses = available_ip_addresses[1:]
 			server_data.options.message_type = DHCP_MESSAGE_TYPES.ACK
