@@ -61,7 +61,7 @@ DHCP_MESSAGE_TYPES = SimpleNamespace()
 DHCP_MESSAGE_TYPES.DISCOVER = 1
 DHCP_MESSAGE_TYPES.OFFER = 2
 DHCP_MESSAGE_TYPES.REQUEST = 3
-#DHCP_MESSAGE_TYPES.DECLINE = 4
+DHCP_MESSAGE_TYPES.DECLINE = 4
 DHCP_MESSAGE_TYPES.ACK = 5
 DHCP_MESSAGE_TYPES.NAK = 6
 #DHCP_MESSAGE_TYPES.RELEASE = 7
@@ -157,7 +157,7 @@ while True:
 	
 	if not hasattr(client_data.options, "requested_ip_address") and client_data.ciaddr != NO_IP_ADDRESS:
 		client_data.options.requested_ip_address =	client_data.ciaddr
-	
+
 	server_data = SimpleNamespace()
 	server_data.op = DHCP_OP_CODES.REPLY
 	server_data.htype = HARDWARE_TYPES.ETHERNET
@@ -211,66 +211,73 @@ while True:
 			available_ip_addresses = available_ip_addresses[1:]
 			server_data.options.message_type = DHCP_MESSAGE_TYPES.ACK
 			server_data.yiaddr = used_ip_address.ip_address
-
-	server_raw_data = b""
-	server_raw_data += server_data.op.to_bytes(1, byteorder="big")
-	server_raw_data += server_data.htype.to_bytes(1, byteorder="big")
-	server_raw_data += server_data.hlen.to_bytes(1, byteorder="big")
-	server_raw_data += server_data.hops.to_bytes(1, byteorder="big")
-	server_raw_data += server_data.xid.to_bytes(4, byteorder="big")
-	server_raw_data += server_data.secs.to_bytes(2, byteorder="big")
-	server_raw_data += server_data.flags.to_bytes(2, byteorder="big")
-	server_raw_data += server_data.ciaddr.packed
-	server_raw_data += server_data.yiaddr.packed
-	server_raw_data += server_data.siaddr.packed
-	server_raw_data += server_data.giaddr.packed
-	server_raw_data += server_data.chaddr
-	server_raw_data += server_data.sname.encode("utf-8").ljust(64, b"\x00")
-	server_raw_data += server_data.file.encode("utf-8").ljust(128, b"\x00")
-	server_raw_data += DHCP_MAGIC_COOKIE
 	
-	server_raw_data += DHCP_OPTIONS.MESSAGE_TYPE.to_bytes(1, byteorder="big")
-	server_raw_data += (1).to_bytes(1, byteorder="big")
-	server_raw_data += server_data.options.message_type.to_bytes(1, byteorder="big")
+	elif client_data.options.message_type == DHCP_MESSAGE_TYPES.DECLINE:
+		for used_ip_address in used_ip_addresses:
+			if used_ip_address.ip_address == client_data.yiaddr and used_ip_address.hardware_address == client_data.chaddr`:
+				used_ip_address.hardware_address = "\x00"*16
 	
-	server_raw_data += DHCP_OPTIONS.LEASE_TIME.to_bytes(1, byteorder="big")
-	server_raw_data += (4).to_bytes(1, byteorder="big")
-	server_raw_data += config.lease_time.to_bytes(4, byteorder="big")
+	if client_data.options.message_type in [DHCP_MESSAGE_TYPES.DISCOVER, DHCP_MESSAGE_TYPES.REQUEST]:
 	
-	server_raw_data += DHCP_OPTIONS.RENEWAL_TIME.to_bytes(1, byteorder="big")
-	server_raw_data += (4).to_bytes(1, byteorder="big")
-	server_raw_data += int(config.lease_time*0.5).to_bytes(4, byteorder="big")
-	
-	server_raw_data += DHCP_OPTIONS.REBINDING_TIME.to_bytes(1, byteorder="big")
-	server_raw_data += (4).to_bytes(1, byteorder="big")
-	server_raw_data += int(config.lease_time*0.75).to_bytes(4, byteorder="big")
-	
-	server_raw_data += DHCP_OPTIONS.DHCP_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
-	server_raw_data += (4).to_bytes(1, byteorder="big")
-	server_raw_data += config.dhcp.packed
-	
-	if DHCP_OPTIONS.SUBNET_MASK in client_data.options.requested_parameters:
-		server_raw_data += DHCP_OPTIONS.SUBNET_MASK.to_bytes(1, byteorder="big")
-		server_raw_data += (4).to_bytes(1, byteorder="big")
-		server_raw_data += config.subnet_mask.packed
-	
-	if DHCP_OPTIONS.ROUTER in client_data.options.requested_parameters:
-		server_raw_data += DHCP_OPTIONS.ROUTER.to_bytes(1, byteorder="big")
-		server_raw_data += (4).to_bytes(1, byteorder="big")
-		server_raw_data += config.router.packed
+		server_raw_data = b""
+		server_raw_data += server_data.op.to_bytes(1, byteorder="big")
+		server_raw_data += server_data.htype.to_bytes(1, byteorder="big")
+		server_raw_data += server_data.hlen.to_bytes(1, byteorder="big")
+		server_raw_data += server_data.hops.to_bytes(1, byteorder="big")
+		server_raw_data += server_data.xid.to_bytes(4, byteorder="big")
+		server_raw_data += server_data.secs.to_bytes(2, byteorder="big")
+		server_raw_data += server_data.flags.to_bytes(2, byteorder="big")
+		server_raw_data += server_data.ciaddr.packed
+		server_raw_data += server_data.yiaddr.packed
+		server_raw_data += server_data.siaddr.packed
+		server_raw_data += server_data.giaddr.packed
+		server_raw_data += server_data.chaddr
+		server_raw_data += server_data.sname.encode("utf-8").ljust(64, b"\x00")
+		server_raw_data += server_data.file.encode("utf-8").ljust(128, b"\x00")
+		server_raw_data += DHCP_MAGIC_COOKIE
 		
-	if DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS in client_data.options.requested_parameters:
-		if type(config.dns) == IPv4Address:
-			server_raw_data += DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
+		server_raw_data += DHCP_OPTIONS.MESSAGE_TYPE.to_bytes(1, byteorder="big")
+		server_raw_data += (1).to_bytes(1, byteorder="big")
+		server_raw_data += server_data.options.message_type.to_bytes(1, byteorder="big")
+		
+		server_raw_data += DHCP_OPTIONS.LEASE_TIME.to_bytes(1, byteorder="big")
+		server_raw_data += (4).to_bytes(1, byteorder="big")
+		server_raw_data += config.lease_time.to_bytes(4, byteorder="big")
+		
+		server_raw_data += DHCP_OPTIONS.RENEWAL_TIME.to_bytes(1, byteorder="big")
+		server_raw_data += (4).to_bytes(1, byteorder="big")
+		server_raw_data += int(config.lease_time*0.5).to_bytes(4, byteorder="big")
+		
+		server_raw_data += DHCP_OPTIONS.REBINDING_TIME.to_bytes(1, byteorder="big")
+		server_raw_data += (4).to_bytes(1, byteorder="big")
+		server_raw_data += int(config.lease_time*0.75).to_bytes(4, byteorder="big")
+		
+		server_raw_data += DHCP_OPTIONS.DHCP_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
+		server_raw_data += (4).to_bytes(1, byteorder="big")
+		server_raw_data += config.dhcp.packed
+		
+		if DHCP_OPTIONS.SUBNET_MASK in client_data.options.requested_parameters:
+			server_raw_data += DHCP_OPTIONS.SUBNET_MASK.to_bytes(1, byteorder="big")
 			server_raw_data += (4).to_bytes(1, byteorder="big")
-			server_raw_data += config.dns.packed
-		elif type(config.dns) == SimpleNamespace:
-			server_raw_data += DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
-			server_raw_data += (8).to_bytes(1, byteorder="big")
-			server_raw_data += config.dns.primary.packed
-			server_raw_data += config.dns.secondary.packed
-	
-	server_raw_data += DHCP_OPTIONS.END.to_bytes(1, byteorder="big")
-	
-	server.sendto(server_raw_data, ("255.255.255.255", DHCP_CLIENT_PORT))
+			server_raw_data += config.subnet_mask.packed
+		
+		if DHCP_OPTIONS.ROUTER in client_data.options.requested_parameters:
+			server_raw_data += DHCP_OPTIONS.ROUTER.to_bytes(1, byteorder="big")
+			server_raw_data += (4).to_bytes(1, byteorder="big")
+			server_raw_data += config.router.packed
+			
+		if DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS in client_data.options.requested_parameters:
+			if type(config.dns) == IPv4Address:
+				server_raw_data += DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
+				server_raw_data += (4).to_bytes(1, byteorder="big")
+				server_raw_data += config.dns.packed
+			elif type(config.dns) == SimpleNamespace:
+				server_raw_data += DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
+				server_raw_data += (8).to_bytes(1, byteorder="big")
+				server_raw_data += config.dns.primary.packed
+				server_raw_data += config.dns.secondary.packed
+		
+		server_raw_data += DHCP_OPTIONS.END.to_bytes(1, byteorder="big")
+		
+		server.sendto(server_raw_data, ("255.255.255.255", DHCP_CLIENT_PORT))
 
