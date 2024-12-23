@@ -32,13 +32,13 @@ DHCP_OPTIONS.DNS_SERVER_IP_ADDRESS = 6
 #DHCP_OPTIONS.NETBIOS_IP_ADDRESS = 44
 #DHCP_OPTIONS.NETBIOS_NODE_TYPE = 46
 DHCP_OPTIONS.REQUESTED_IP_ADDRESS = 50
-#DHCP_OPTIONS.LEASE_TIME = 51
+DHCP_OPTIONS.LEASE_TIME = 51
 DHCP_OPTIONS.MESSAGE_TYPE = 53
 DHCP_OPTIONS.DHCP_SERVER_IP_ADDRESS = 54
 DHCP_OPTIONS.PARAMETER_REQUEST_LIST = 55
 #DHCP_OPTIONS_MAX_MESSAGE_SIZE = 57
-#DHCP_OPTIONS.RENEWAL_TIME = 58
-#DHCP_OPTIONS.REBINDING_TIME = 59
+DHCP_OPTIONS.RENEWAL_TIME = 58
+DHCP_OPTIONS.REBINDING_TIME = 59
 #DHCP_OPIONS.VENDOR_CLASS_ID = 60
 #DHCP_OPTIONS.CLIENT_ID = 61
 #DHCP_OPTIONS.TFTP_SERVER_IP_ADDRESS = 66
@@ -216,10 +216,22 @@ while True:
 	server_raw_data += (1).to_bytes(1, byteorder="big")
 	server_raw_data += server_data.options.message_type.to_bytes(1, byteorder="big")
 	
+	server_raw_data += DHCP_OPTIONS.LEASE_TIME.to_bytes(1, byteorder="big")
+	server_raw_data += (4).to_bytes(1, byteorder="big")
+	server_raw_data += config.lease_time.to_bytes(4, byteorder="big")
+	
+	server_raw_data += DHCP_OPTIONS.RENEWAL_TIME.to_bytes(1, byteorder="big")
+	server_raw_data += (4).to_bytes(1, byteorder="big")
+	server_raw_data += int(config.lease_time*0.5).to_bytes(4, byteorder="big")
+	
+	server_raw_data += DHCP_OPTIONS.REBINDING_TIME.to_bytes(1, byteorder="big")
+	server_raw_data += (4).to_bytes(1, byteorder="big")
+	server_raw_data += int(config.lease_time*0.75).to_bytes(4, byteorder="big")
+	
 	server_raw_data += DHCP_OPTIONS.DHCP_SERVER_IP_ADDRESS.to_bytes(1, byteorder="big")
 	server_raw_data += (4).to_bytes(1, byteorder="big")
 	server_raw_data += config.dhcp.packed
-		
+	
 	if DHCP_OPTIONS.SUBNET_MASK in client_data.options.requested_parameters:
 		server_raw_data += DHCP_OPTIONS.SUBNET_MASK.to_bytes(1, byteorder="big")
 		server_raw_data += (4).to_bytes(1, byteorder="big")
