@@ -91,7 +91,7 @@ server.bind(("0.0.0.0", DHCP_SERVER_PORT))
 server.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
 while True:
-
+	
 	client_data, client_address = server.recvfrom(MAX_TRANSMISSION_UNIT)
 
 	client_data = {
@@ -143,6 +143,9 @@ while True:
 		options_index += 2 + option_length
 	
 	del client_data.options_data
+	
+	if not hasattr(client_data.options, "requested_ip_address") and client_data.ciaddr != NO_IP_ADDRESS:
+		client_data.options.requested_ip_address =	client_data.ciaddr
 	
 	server_data = SimpleNamespace()
 	server_data.op = DHCP_OP_CODES.REPLY
